@@ -1,12 +1,14 @@
 package io.cresendo.chat.controller;
 
-import io.cresendo.chat.dto.ChatRoom;
-import io.cresendo.chat.service.ChatService;
+import io.cresendo.chat.cd.MessageType;
+import io.cresendo.chat.dto.ChatMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -14,15 +16,14 @@ import java.util.List;
 @RequestMapping("/chat")
 public class ChatController {
 
-    private final ChatService chatService;
+    private final SimpMessageSendingOperations messagingTemplate;
 
-    @PostMapping
-    public ChatRoom createRoom(@RequestBody String roomName) {
-        return chatService.createRoom(roomName);
-    }
-
-    @GetMapping
-    public List<ChatRoom> findAllRoom() {
-        return chatService.findAllRoom();
+    @MessageMapping("/chat/message")
+    public void message(ChatMessage chatMessage) {
+        if (MessageType.ENTER.equals(chatMessage.getType())) {
+            chatMessage.setMessage(chatMessage.getSender() + "님이 입장하셨습니다. ");
+        }
+//        messagingTemplate.convertAndSend("/sub/chat/room/" + chatMessage.getChatRoomId());
+        messagingTemplate.convertAndSend("/sub/chat/room/" + chatMessage.getChatRoomId(), chatMessage);
     }
 }
